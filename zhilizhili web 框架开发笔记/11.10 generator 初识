@@ -1,0 +1,137 @@
+先吐槽一下 es6 不知道为什么变成 es2015
+
+generator 返回 iterable 对象
+
+js 提供了一种 generator 函数
+
+这里使用斐波那契数列求法作为演示
+
+斐波那契数列 第三个数开始 是 前两个数的和
+
+那么一个普通的算法
+```
+let a = 1;
+let b = 1;
+
+// current = a;
+// a --- b
+// 1 --- 1
+   ^
+   |
+  current ----> 保存
+
+// a = b
+// a --- b------
+// &b --- 1    |
+   ^           |
+   |           |
+   -------------
+
+// b = b + current
+// a --- b <---  b +  &current
+   ^     |        ^     ^
+   |     |        |     |
+   |     ----------     |
+   |                    |
+   |                    |
+   |                    |
+  current----------------
+```
+current 指向 a
+
+```
+废话不多说 直接给我的代码
+
+function* fibo() {
+    let a = 1;
+    let b = 1;
+
+    while(true) {
+        var current = a;
+        a = b;
+        b = b + current;
+        console.log("===========");
+        console.log(`a: ${a}`);
+        console.log(`b: ${b}`);
+        console.log(`curent: ${current}`);
+        var reset = yield current;
+        if (reset) {
+            a = 1;
+            b = 1;
+        }
+    }
+}
+
+let gen = fibo();
+let index = 0;
+
+let item = gen.next();
+
+// 没有结束就返回值
+while(!item.done) {
+    if (Number.isFinite(item.value)) {
+        console.log(item.value);
+        item = gen.next();
+        index++;
+    } else {
+        item = {value: undefined, done: true};
+    }
+}
+
+```
+
+大家测试一下 开心就好
+
+```
+另外还有个特性 next 中参数会被 yield 传进来
+
+//console.log(gen.next().value);     // 1
+//console.log(gen.next().value);     // 1
+//console.log(gen.next().value);     // 2
+//console.log(gen.next().value);     // 3
+//console.log(gen.next().value);     // 5
+//console.log(gen.next().value);     // 8
+//console.log(gen.next().value);     // 13
+//console.log(gen.next(true).value); // 1
+//console.log(gen.next().value);     // 1
+//console.log(gen.next().value);     // 2
+//console.log(gen.next().value);     // 3
+```
+
+generator怎么兼容呢
+
+大家可以看我的项目web-future
+
+es6 到 es5 推荐使用 babel 翻译 要用6.0爽一点
+
+gulpfile.js
+```
+const babel = require('gulp-babel');
+const browserify = require("gulp-browserify");
+const babelify = require("babelify");
+
+var es5 = browserify({
+    transform: function(filename, opts){
+        return babelify(filename, {
+            presets: ['es2015'],
+            plugins: ['transform-regenerator']
+        });
+    }
+});
+
+gulp.task('build-es', function(src, dest) {
+    return gulp.src(src)
+        .pipe(es5)
+        .pipe(gulp.dest(dest))
+});
+```
+
+your js （什么鬼）
+```
+// 但是你可能用不了
+// transform-regenerator 6.0.18 还没把runtime加入进去
+// 所以你要自己加
+
+import "babel-plugin-transform-regenerator/runtime";
+
+```
